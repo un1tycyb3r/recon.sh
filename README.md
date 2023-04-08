@@ -5,3 +5,7 @@ My recon script
 
         git clone https://github.com/un1tycyb3r/recon.sh.git
         chmod +x recon.sh
+
+# Usage
+
+        ./recon.sh <domain> <organization>
