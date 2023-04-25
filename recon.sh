@@ -81,14 +81,6 @@ cat $subs_path/domains.txt | cut -d ',' -f 1 | anew $subs_path/subs.txt
 echo '--------------------------------------------'
 echo '--------------------------------------------'
 
-# Assetfinder Scan
-echo 'assetfinder scan'
-assetfinder -subs-only $url | anew $subs_path/subs.txt
-
-
-echo '--------------------------------------------'
-echo '--------------------------------------------'
-
 #Github Sub Scraping
 echo 'github scan'
 github-subdomains -d $url -t <github-token> -o $subs_path/ghsubs.txt
@@ -100,7 +92,7 @@ rm $subs_path/ghsubs.txt
 # PureDNS Brute Force
 echo "Brute forcing subdomains for $url"
 puredns bruteforce ~/tools/wordlists/assetnote/subs/subs.txt $url --resolvers ~/tools/resolvers/validated-new -w $subs_path/brute.txt
-cat $subs_path/brute.txt | anew subs.txt
+cat $subs_path/brute.txt | anew $subs_path/subs.txt
 dnsx -l $subs_path/subs.txt -json -o $hosts_path/dns.json | jq -r '.a?[]?' | anew $hosts_path/ips.txt | wc -l
 
 
@@ -115,25 +107,14 @@ cat $hosts_path/ips.txt | naabu -silent -o $portscan_path/naabu.txt
 
 ### Host Identification
 echo "Begin host discovery"
-tew -i $portscan_path/naabu.txt -dnsx $hosts_path/dns.json -vhost | httpx -json | jq -r .url | anew $hosts_path/http.txt
+tew -i $portscan_path/naabu.txt -dnsx $hosts_path/dns.json -vhost | httpx --json -o $hosts_path/http.json
+cat $hosts_path/http.json | jq -r .url | sed -e 's/:80$//g' -e 's/:443$//g' | anew $hosts_path/http.txt
 
 ### HTTP Crawling
-katana -u $hosts_path/http.txt -json -o $content_path/crawl.txt
-cat $content_path/crawl.txt | grep "{" | jq -r .endpoint | anew crawl.txt
+gospider -S $hosts_path/http.txt --json | grep "{" | jq -r .endpoint | anew $content_path/crawl.txt
 
 ### HTTP Responses
 tew -i $portscan_path/naabu.txt -dnsx $hosts_path/dns.json -vhost | httpx -sr -srd $content_path/responses
-
-### JS Scraping
-cat $content_path/crawl.txt | grep "\.js" | httpx -sr -srd $content_path/js
-
-### Look for some quick wins ###
-
-### File Inclusion
-cat crawl.txt | grep "?" | qsreplace "../../../../../etc/passwd" | ffuf -u "FUZZ" -w - -mr "^root:" -od $quick_wins/etcpasswd
-cat crawl.txt | grep "?" | qsreplace "../../../../../etc/hosts" | ffuf -u "FUZZ" -w - -mr "^127.0.0.1:" -od $quick_wins/hostsfile
-
-
 
 ### Calculate Endtime
 endtime=$(date +%s)
@@ -150,3 +131,9 @@ else
 fi
 
 echo "Scan for $url took $time"
+
+
+
+### Add waymore and XNLinkFinder to workflow
+
+### Gau added to workflow?
