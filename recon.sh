@@ -111,7 +111,8 @@ tew -i $portscan_path/naabu.txt -dnsx $hosts_path/dns.json -vhost | httpx --json
 cat $hosts_path/http.json | jq -r .url | sed -e 's/:80$//g' -e 's/:443$//g' | anew $hosts_path/http.txt
 
 ### HTTP Crawling
-gospider -S $hosts_path/http.txt --json | grep "{" | jq -r .endpoint | anew $content_path/crawl.txt
+gospider -S $hosts_path/http.txt --json | tee -a crawl.json
+cat crawl.json | grep "{" | jq -r .endpoint | anew $content_path/crawl.txt
 
 ### HTTP Responses
 tew -i $portscan_path/naabu.txt -dnsx $hosts_path/dns.json -vhost | httpx -sr -srd $content_path/responses
@@ -131,9 +132,3 @@ else
 fi
 
 echo "Scan for $url took $time"
-
-
-
-### Add waymore and XNLinkFinder to workflow
-
-### Gau added to workflow?
